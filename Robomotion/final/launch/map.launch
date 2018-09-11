@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="odom_frame_id"   default="odom"/>
+  <arg name="base_frame_id"   default="base_link"/>
+  <arg name="global_frame_id" default="/map"/>
+  <arg name="odom_topic" default="odom" />
+  <arg name="laser_topic" default="/scan" />
+  <arg name="map_file" default="$(find multiple_robots_stage)/maps/map12.yaml"/>
+
+  <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_file)" respawn="false">
+    <param name="frame_id" value="/map"/>
+  </node>
+  <arg name="laser_enabled" default="true"/>
+  <arg name="kinect_enabled" default="false"/>
+
+  <include file="$(find husky_gazebo)/launch/playpen.launch" />
+
+  <include file="$(find husky_gazebo)/launch/spawn_husky.launch">
+    <arg name="laser_enabled" value="$(arg laser_enabled)"/>
+    <arg name="kinect_enabled" value="$(arg kinect_enabled)"/>
+  </include>
+
+  <node pkg="tf" type="static_transform_publisher" name="map_odom_broadcaster" args="0 5 0 0 0 0 /map odom 100" />
+
+  <node name="pedsim_simulator" pkg="pedsim_simulator" type="pedsim_simulator" output="screen">
+      <!-- 0 - headless, 1 - minimal, 2 - full -->
+      <param name="visual_mode" value="1" type="int"/>
+      <param name="scene_file" value="$(find pedsim_simulator)scenarios/altorfer.xml" type="string"/>
+      <param name="default_queue_size" value="10"/>
+      <!-- param name="max_robot_speed" value="1.5" type="double"/-->
+      <param name="robot_mode" value="1" type="int"/>-->
+      <param name="enable_groups" value="false" type="bool"/>
+  </node>
+
+  <node pkg="move_base" type="move_base" respawn="false" name="move_base_node" output="screen">
+    <rosparam file="$(find turtlebot_navigation)/param/costmap_common_params.yaml" command="load" ns="global_costmap" />
+    <rosparam file="$(find turtlebot_navigation)/param/costmap_common_params.yaml" command="load" ns="local_costmap" />  
+    <rosparam file="$(find turtlebot_navigation)/param/local_costmap_params.yaml" command="load" />   
+    <rosparam file="$(find turtlebot_navigation)/param/global_costmap_params.yaml" command="load" />
+    <!--rosparam file="$(find turtlebot_navigation)/param/dwa_local_planner_params.yaml" command="load" /-->
+    <rosparam file="$(find final)/param/base_local_planner_params.yaml" command="load" />
+    <rosparam file="$(find turtlebot_navigation)/param/move_base_params.yaml" command="load" />
+    <rosparam file="$(find turtlebot_navigation)/param/global_planner_params.yaml" command="load" />
+    <rosparam file="$(find turtlebot_navigation)/param/navfn_global_planner_params.yaml" command="load" />
+    
+<!-- reset frame_id parameters using user input data-->
+    <param name="global_costmap/global_frame" value="$(arg global_frame_id)"/>
+    <param name="global_costmap/robot_base_frame" value="$(arg base_frame_id)"/>
+    <param name="local_costmap/global_frame" value="$(arg odom_frame_id)"/>
+    <param name="local_costmap/robot_base_frame" value="$(arg base_frame_id)"/>
+
+    <remap from="cmd_vel" to="/cmd_vel"/>
+    <remap from="odom" to="$(arg odom_topic)"/>
+    <remap from="scan" to="$(arg laser_topic)"/>
+  </node>
+-->
+
+</launch>
